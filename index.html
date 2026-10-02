@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Porsche Brasil: dashboard de vendas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#14171A;--paper:#EDEFF1;--card:#fff;--red:#D5001C;--steel:#5B6670;--line:#D5D9DD;--aqua:#0E7C86;--gold:#B8863B}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 16px/1.5 Barlow,system-ui,sans-serif}
+h1,h2,.num{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;margin:0}
+header{background:var(--ink);color:#fff;padding:32px 24px 28px;border-bottom:6px solid var(--red)}
+.wrap{max-width:1080px;margin:0 auto}
+header h1{font-size:clamp(34px,6vw,56px);line-height:1;letter-spacing:.01em}
+header p{margin:8px 0 0;color:#B9C0C7;max-width:60ch}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 32px;margin-top:24px}
+.kpi .num{font-size:clamp(34px,5vw,48px);line-height:1}
+.kpi:first-child .num{color:#fff}
+.kpi span{display:block;color:#B9C0C7;font-size:14px;margin-top:4px}
+.filters{background:var(--card);border-bottom:1px solid var(--line);padding:14px 24px;position:sticky;top:0;z-index:2}
+.filters .wrap{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+label{display:flex;flex-direction:column;font-size:13px;color:var(--steel);font-weight:500;gap:4px}
+select,button{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--ink);min-width:150px}
+button{cursor:pointer;min-width:0;background:var(--ink);color:#fff;border-color:var(--ink)}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+main{padding:24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:20px}
+section{background:var(--card);border-top:4px solid var(--ink);padding:20px;border-radius:0 0 6px 6px}
+section.wide{grid-column:1/-1}
+h2{font-size:26px;line-height:1.1}
+.sub{color:var(--steel);font-size:14px;margin:4px 0 16px}
+.row{display:grid;grid-template-columns:120px 1fr 96px;gap:10px;align-items:center;margin:8px 0;font-size:14px}
+.track{background:var(--paper);height:18px;border-radius:2px;overflow:hidden}
+.fill{height:100%;background:var(--red)}
+.val{text-align:right;font-weight:600}
+.cols{display:flex;gap:24px;align-items:flex-end;height:200px;padding-top:8px}
+.col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:6px}
+.col .bar{width:100%;max-width:90px;background:var(--aqua);min-height:2px}
+.col b{font-size:14px}
+.stack{display:flex;height:28px;border-radius:3px;overflow:hidden;margin-bottom:14px}
+.leg{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+.leg div{display:flex;align-items:center;gap:8px;font-size:14px}
+.sw{width:14px;height:14px;border-radius:2px;flex:none}
+.empty{padding:32px;text-align:center;color:var(--steel)}
+footer{padding:8px 24px 32px;color:var(--steel);font-size:13px}
+@media(max-width:560px){.row{grid-template-columns:90px 1fr 80px}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>Porsche Brasil: vendas de 2023 a 2025</h1>
+  <p>Quais modelos rendem mais, como a receita evolui e como os clientes pagam. Use os filtros para recortar os números.</p>
+  <div class="kpis" id="kpis"></div>
+</div></header>
+
+<div class="filters"><div class="wrap" id="filters"></div></div>
+
+<main><div class="wrap" id="app"></div></main>
+<footer><div class="wrap">Dados fictícios, criados apenas para demonstração.</div></footer>
+
+<script>
+const DATA = [{"m":"911 Carrera","c":"Curitiba","a":2023,"p":"Cartão","v":1136000},{"m":"718 Cayman","c":"Belo Horizonte","a":2024,"p":"À vista","v":526000},{"m":"Macan","c":"São Paulo","a":2025,"p":"À vista","v":503000},{"m":"Macan","c":"Curitiba","a":2025,"p":"Cartão","v":617000},{"m":"Macan","c":"Belo Horizonte","a":2023,"p":"Financiamento","v":546000},{"m":"718 Cayman","c":"Rio de Janeiro","a":2025,"p":"Financiamento","v":506000},{"m":"Panamera","c":"Rio de Janeiro","a":2024,"p":"Financiamento","v":906000},{"m":"Macan","c":"São Paulo","a":2024,"p":"Financiamento","v":502000},{"m":"Macan","c":"Rio de Janeiro","a":2025,"p":"Financiamento","v":595000},{"m":"911 Carrera","c":"Brasília","a":2023,"p":"Financiamento","v":1144000},{"m":"Macan","c":"Curitiba","a":2024,"p":"Financiamento","v":608000},{"m":"718 Cayman","c":"São Paulo","a":2024,"p":"À vista","v":517000},{"m":"Macan","c":"Curitiba","a":2025,"p":"Financiamento","v":499000},{"m":"Panamera","c":"Curitiba","a":2025,"p":"Financiamento","v":936000},{"m":"Cayenne","c":"São Paulo","a":2024,"p":"Financiamento","v":764000},{"m":"Cayenne","c":"Curitiba","a":2025,"p":"Cartão","v":762000},{"m":"Panamera","c":"São Paulo","a":2024,"p":"À vista","v":929000},{"m":"Macan","c":"São Paulo","a":2023,"p":"À vista","v":516000},{"m":"911 Carrera","c":"São Paulo","a":2025,"p":"À vista","v":1305000},{"m":"Macan","c":"Belo Horizonte","a":2025,"p":"Cartão","v":565000},{"m":"911 Carrera","c":"São Paulo","a":2025,"p":"Cartão","v":1212000},{"m":"911 Carrera","c":"São Paulo","a":2024,"p":"À vista","v":1143000},{"m":"Panamera","c":"São Paulo","a":2024,"p":"Financiamento","v":906000},{"m":"Macan","c":"Belo Horizonte","a":2025,"p":"Cartão","v":568000},{"m":"Cayenne","c":"Rio de Janeiro","a":2025,"p":"Financiamento","v":897000},{"m":"Macan","c":"Curitiba","a":2023,"p":"À vista","v":507000},{"m":"Taycan","c":"São Paulo","a":2025,"p":"À vista","v":912000},{"m":"718 Cayman","c":"São Paulo","a":2024,"p":"Financiamento","v":474000},{"m":"718 Cayman","c":"São Paulo","a":2024,"p":"Cartão","v":481000},{"m":"Cayenne","c":"São Paulo","a":2025,"p":"Cartão","v":844000},{"m":"Macan","c":"São Paulo","a":2023,"p":"Leasing","v":557000},{"m":"Cayenne","c":"Curitiba","a":2025,"p":"À vista","v":845000},{"m":"Taycan","c":"São Paulo","a":2025,"p":"Cartão","v":931000},{"m":"Cayenne","c":"Curitiba","a":2023,"p":"Leasing","v":809000},{"m":"911 Carrera","c":"São Paulo","a":2024,"p":"Financiamento","v":1198000},{"m":"Cayenne","c":"São Paulo","a":2024,"p":"Cartão","v":816000},{"m":"Panamera","c":"São Paulo","a":2025,"p":"Financiamento","v":1033000},{"m":"Cayenne","c":"Brasília","a":2025,"p":"À vista","v":946000},{"m":"Cayenne","c":"Rio de Janeiro","a":2024,"p":"Cartão","v":939000},{"m":"Macan","c":"São Paulo","a":2024,"p":"Financiamento","v":523000},{"m":"Macan","c":"Rio de Janeiro","a":2023,"p":"Financiamento","v":622000},{"m":"Cayenne","c":"São Paulo","a":2023,"p":"Cartão","v":908000},{"m":"Cayenne","c":"Rio de Janeiro","a":2024,"p":"Financiamento","v":899000},{"m":"Cayenne","c":"Belo Horizonte","a":2025,"p":"Financiamento","v":768000},{"m":"Cayenne","c":"São Paulo","a":2024,"p":"À vista","v":767000},{"m":"Macan","c":"Curitiba","a":2025,"p":"Cartão","v":554000},{"m":"Taycan","c":"São Paulo","a":2025,"p":"Financiamento","v":958000},{"m":"718 Cayman","c":"Curitiba","a":2023,"p":"Financiamento","v":552000},{"m":"Taycan","c":"Brasília","a":2024,"p":"À vista","v":910000},{"m":"911 Carrera","c":"Brasília","a":2024,"p":"À vista","v":1237000},{"m":"Macan","c":"Belo Horizonte","a":2024,"p":"Cartão","v":511000},{"m":"Cayenne","c":"Rio de Janeiro","a":2025,"p":"À vista","v":911000},{"m":"911 Carrera","c":"Brasília","a":2024,"p":"Financiamento","v":1239000},{"m":"Cayenne","c":"São Paulo","a":2025,"p":"Leasing","v":780000},{"m":"Macan","c":"Rio de Janeiro","a":2025,"p":"Financiamento","v":536000},{"m":"Cayenne","c":"São Paulo","a":2024,"p":"À vista","v":925000},{"m":"Cayenne","c":"Rio de Janeiro","a":2023,"p":"Financiamento","v":851000},{"m":"Cayenne","c":"Rio de Janeiro","a":2024,"p":"Financiamento","v":850000},{"m":"Macan","c":"Belo Horizonte","a":2025,"p":"Cartão","v":556000},{"m":"Taycan","c":"Rio de Janeiro","a":2024,"p":"Cartão","v":873000},{"m":"718 Cayman","c":"Rio de Janeiro","a":2023,"p":"Financiamento","v":471000},{"m":"Macan","c":"São Paulo","a":2023,"p":"Cartão","v":522000},{"m":"911 Carrera","c":"Curitiba","a":2024,"p":"À vista","v":1298000},{"m":"718 Cayman","c":"Curitiba","a":2023,"p":"Financiamento","v":512000},{"m":"Macan","c":"Brasília","a":2024,"p":"Leasing","v":623000},{"m":"Taycan","c":"Rio de Janeiro","a":2024,"p":"Financiamento","v":904000},{"m":"Cayenne","c":"Rio de Janeiro","a":2025,"p":"Leasing","v":754000},{"m":"Macan","c":"São Paulo","a":2023,"p":"À vista","v":561000},{"m":"Taycan","c":"Brasília","a":2023,"p":"À vista","v":866000},{"m":"718 Cayman","c":"São Paulo","a":2024,"p":"Cartão","v":549000},{"m":"Panamera","c":"Belo Horizonte","a":2025,"p":"À vista","v":1018000},{"m":"Taycan","c":"Curitiba","a":2023,"p":"À vista","v":940000},{"m":"Cayenne","c":"Belo Horizonte","a":2024,"p":"Cartão","v":787000},{"m":"Cayenne","c":"São Paulo","a":2024,"p":"À vista","v":909000},{"m":"Panamera","c":"São Paulo","a":2025,"p":"Financiamento","v":968000},{"m":"Taycan","c":"São Paulo","a":2024,"p":"Cartão","v":951000},{"m":"Taycan","c":"São Paulo","a":2024,"p":"Financiamento","v":873000},{"m":"Macan","c":"Rio de Janeiro","a":2024,"p":"À vista","v":521000},{"m":"Panamera","c":"São Paulo","a":2023,"p":"Leasing","v":1091000},{"m":"Macan","c":"Rio de Janeiro","a":2025,"p":"À vista","v":519000},{"m":"Panamera","c":"Rio de Janeiro","a":2025,"p":"Cartão","v":963000},{"m":"911 Carrera","c":"São Paulo","a":2024,"p":"Cartão","v":1154000},{"m":"Cayenne","c":"Rio de Janeiro","a":2024,"p":"Cartão","v":876000},{"m":"Panamera","c":"Curitiba","a":2024,"p":"Financiamento","v":868000},{"m":"718 Cayman","c":"São Paulo","a":2025,"p":"Financiamento","v":536000},{"m":"911 Carrera","c":"São Paulo","a":2025,"p":"À vista","v":1162000},{"m":"911 Carrera","c":"São Paulo","a":2024,"p":"Cartão","v":1094000},{"m":"Macan","c":"Belo Horizonte","a":2024,"p":"À vista","v":526000},{"m":"911 Carrera","c":"São Paulo","a":2024,"p":"Financiamento","v":1189000},{"m":"911 Carrera","c":"São Paulo","a":2024,"p":"Cartão","v":1238000},{"m":"911 Carrera","c":"São Paulo","a":2024,"p":"Financiamento","v":1261000},{"m":"911 Carrera","c":"Rio de Janeiro","a":2024,"p":"Financiamento","v":1261000},{"m":"Cayenne","c":"São Paulo","a":2024,"p":"Leasing","v":924000},{"m":"Macan","c":"Rio de Janeiro","a":2024,"p":"À vista","v":531000},{"m":"Panamera","c":"Curitiba","a":2025,"p":"À vista","v":1067000},{"m":"Macan","c":"Brasília","a":2023,"p":"Cartão","v":560000},{"m":"Macan","c":"Curitiba","a":2024,"p":"À vista","v":610000},{"m":"718 Cayman","c":"Belo Horizonte","a":2025,"p":"Cartão","v":532000},{"m":"Macan","c":"Curitiba","a":2024,"p":"Financiamento","v":576000},{"m":"718 Cayman","c":"Curitiba","a":2025,"p":"Cartão","v":552000}]; // {m: modelo, c: cidade, a: ano, p: pagamento, v: valor em R$}
+const FIELDS = [["m","Modelo"],["c","Cidade"],["a","Ano"],["p","Método de pagamento"]];
+const PAY_COLORS = {"À vista":"#D5001C","Financiamento":"#14171A","Leasing":"#0E7C86","Cartão":"#B8863B"};
+const state = {m:"",c:"",a:"",p:""};
+const brl = n => n.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0});
+const mi = n => "R$ " + (n/1e6).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1}) + " mi";
+const uniq = k => [...new Set(DATA.map(d=>d[k]))].sort();
+const sumBy = (rows,k) => rows.reduce((o,d)=>(o[d[k]]=(o[d[k]]||0)+d.v,o),{});
+const countBy = (rows,k) => rows.reduce((o,d)=>(o[d[k]]=(o[d[k]]||0)+1,o),{});
+
+function buildFilters(){
+  const box = document.getElementById("filters");
+  box.innerHTML = FIELDS.map(([k,l])=>
+    `<label>${l}<select data-k="${k}"><option value="">Todos</option>${uniq(k).map(v=>`<option>${v}</option>`).join("")}</select></label>`).join("")
+    + `<button type="button" id="clear">Limpar filtros</button>`;
+  box.querySelectorAll("select").forEach(s=>s.onchange=()=>{state[s.dataset.k]=s.value;render()});
+  document.getElementById("clear").onclick=()=>{FIELDS.forEach(([k])=>state[k]="");box.querySelectorAll("select").forEach(s=>s.value="");render()};
+}
+
+function barRows(entries,max,fmt){
+  return entries.map(([n,v])=>`<div class="row"><span>${n}</span><div class="track"><div class="fill" style="width:${max?v/max*100:0}%"></div></div><span class="val">${fmt(v)}</span></div>`).join("");
+}
+
+function render(){
+  const rows = DATA.filter(d=>FIELDS.every(([k])=>!state[k]||String(d[k])===state[k]));
+  const total = rows.reduce((s,d)=>s+d.v,0);
+  document.getElementById("kpis").innerHTML =
+    `<div class="kpi"><div class="num">${rows.length}</div><span>vendas</span></div>
+     <div class="kpi"><div class="num">${mi(total)}</div><span>receita total</span></div>
+     <div class="kpi"><div class="num">${rows.length?mi(total/rows.length):"R$ 0,0 mi"}</div><span>ticket médio</span></div>`;
+  const app = document.getElementById("app");
+  if(!rows.length){app.innerHTML=`<div class="empty">Nenhuma venda com esses filtros. Clique em "Limpar filtros" para ver todos os dados.</div>`;return}
+
+  const byModel = Object.entries(sumBy(rows,"m")).sort((a,b)=>b[1]-a[1]);
+  const byYear = sumBy(rows,"a"), years = uniq("a"), maxY = Math.max(...years.map(y=>byYear[y]||0));
+  const pay = Object.entries(countBy(rows,"p")).sort((a,b)=>b[1]-a[1]);
+
+  app.innerHTML = `<div class="grid">
+   <section><h2>Quais modelos geram mais receita?</h2><p class="sub">Receita por modelo, do maior para o menor.</p>
+     ${barRows(byModel,byModel[0][1],mi)}</section>
+   <section><h2>Como a receita evolui por ano?</h2><p class="sub">Receita total em cada ano.</p>
+     <div class="cols">${years.map(y=>`<div class="col"><b>${mi(byYear[y]||0)}</b><div class="bar" style="height:${maxY?(byYear[y]||0)/maxY*140:0}px"></div><span>${y}</span></div>`).join("")}</div></section>
+   <section class="wide"><h2>Como os clientes pagam?</h2><p class="sub">Participação de cada método de pagamento no número de vendas.</p>
+     <div class="stack" role="img" aria-label="Participação dos métodos de pagamento">${pay.map(([n,c])=>`<div style="width:${c/rows.length*100}%;background:${PAY_COLORS[n]}"></div>`).join("")}</div>
+     <div class="leg">${pay.map(([n,c])=>`<div><span class="sw" style="background:${PAY_COLORS[n]}"></span>${n}: ${c} vendas (${(c/rows.length*100).toFixed(0)}%)</div>`).join("")}</div></section>
+  </div>`;
+}
+buildFilters();render();
+</script>
+</body>
+</html>
